@@ -110,6 +110,7 @@ export default function Gallery() {
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<number | null>(null);
   const [openFolders, setOpenFolders] = useState<Set<string>>(new Set());
+  const [openSubfolders, setOpenSubfolders] = useState<Set<string>>(new Set());
 
   const { data: folders = [], isLoading: foldersLoading } = useQuery<DriveFolder[]>({
     queryKey: ["/api/gallery/folders"],
@@ -151,6 +152,16 @@ export default function Gallery() {
       newOpenFolders.add(folderId);
     }
     setOpenFolders(newOpenFolders);
+  };
+
+  const toggleSubfolder = (subfolderId: string) => {
+    const newOpenSubfolders = new Set(openSubfolders);
+    if (newOpenSubfolders.has(subfolderId)) {
+      newOpenSubfolders.delete(subfolderId);
+    } else {
+      newOpenSubfolders.add(subfolderId);
+    }
+    setOpenSubfolders(newOpenSubfolders);
   };
 
   return (
@@ -244,16 +255,56 @@ export default function Gallery() {
                           {folder.subfolders && folder.subfolders.length > 0 && (
                             <CollapsibleContent className="ml-6 space-y-1">
                               {folder.subfolders.map(subfolder => (
-                                <button
+                                <Collapsible
                                   key={subfolder.id}
-                                  onClick={() => setSelectedFolder(subfolder.id)}
-                                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-left ${selectedFolder === subfolder.id ? 'bg-[#C82A52]/30' : 'hover:bg-white/10'}`}
-                                  style={{ color: "#E3D095" }}
-                                  data-testid={`subfolder-${subfolder.id}`}
+                                  open={openSubfolders.has(subfolder.id)}
+                                  onOpenChange={() => toggleSubfolder(subfolder.id)}
                                 >
-                                  <Folder className="w-3 h-3" style={{ color: selectedFolder === subfolder.id ? "#C82A52" : "rgba(227, 208, 149, 0.6)" }} />
-                                  <span className="text-sm font-medium truncate">{subfolder.name}</span>
-                                </button>
+                                  <div className="space-y-1">
+                                    <div className="flex items-center gap-1">
+                                      {subfolder.subfolders && subfolder.subfolders.length > 0 && (
+                                        <CollapsibleTrigger asChild>
+                                          <button
+                                            className="p-1 hover:bg-white/10 rounded transition-colors"
+                                            style={{ color: "#E3D095" }}
+                                          >
+                                            {openSubfolders.has(subfolder.id) ? (
+                                              <ChevronDown className="w-3 h-3" />
+                                            ) : (
+                                              <ChevronRightIcon className="w-3 h-3" />
+                                            )}
+                                          </button>
+                                        </CollapsibleTrigger>
+                                      )}
+                                      <button
+                                        onClick={() => setSelectedFolder(subfolder.id)}
+                                        className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-left ${selectedFolder === subfolder.id ? 'bg-[#C82A52]/30' : 'hover:bg-white/10'} ${!(subfolder.subfolders && subfolder.subfolders.length > 0) ? 'ml-5' : ''}`}
+                                        style={{ color: "#E3D095" }}
+                                        data-testid={`subfolder-${subfolder.id}`}
+                                      >
+                                        <Folder className="w-3 h-3" style={{ color: selectedFolder === subfolder.id ? "#C82A52" : "rgba(227, 208, 149, 0.6)" }} />
+                                        <span className="text-sm font-medium truncate">{subfolder.name}</span>
+                                      </button>
+                                    </div>
+                                    
+                                    {subfolder.subfolders && subfolder.subfolders.length > 0 && (
+                                      <CollapsibleContent className="ml-5 space-y-1">
+                                        {subfolder.subfolders.map(childFolder => (
+                                          <button
+                                            key={childFolder.id}
+                                            onClick={() => setSelectedFolder(childFolder.id)}
+                                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-left ${selectedFolder === childFolder.id ? 'bg-[#C82A52]/30' : 'hover:bg-white/10'}`}
+                                            style={{ color: "#E3D095" }}
+                                            data-testid={`child-folder-${childFolder.id}`}
+                                          >
+                                            <Folder className="w-3 h-3" style={{ color: selectedFolder === childFolder.id ? "#C82A52" : "rgba(227, 208, 149, 0.6)" }} />
+                                            <span className="text-sm font-medium truncate">{childFolder.name}</span>
+                                          </button>
+                                        ))}
+                                      </CollapsibleContent>
+                                    )}
+                                  </div>
+                                </Collapsible>
                               ))}
                             </CollapsibleContent>
                           )}
